@@ -155,7 +155,7 @@ public class BankAccountController {
 			rs = stmt.executeQuery(sql);
 
 			if (!rs.next()) {
-				return new Response().add("status", 1);
+				return new Response().add("status", 2);
 			}
 
 			BigDecimal balance = rs.getBigDecimal("balance");
@@ -195,12 +195,12 @@ public class BankAccountController {
 			rs = stmt.executeQuery(sql);
 
 			if (!rs.next()) {
-				return new Response().add("status", 1);
+				return new Response().add("status", 2);
 			}
 
 			BigDecimal balance = rs.getBigDecimal("balance");
 			if ((balance = balance.subtract(amount)).compareTo(BigDecimal.ZERO) < 0) {
-				return new Response().add("status", 2);
+				return new Response().add("status", 3).add("balance", balance);
 			}
 
 			sql = String.format("UPDATE primary_account SET balance='%f' WHERE customer_id=%d;", balance, customer_id);
