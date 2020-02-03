@@ -14,9 +14,9 @@ import com.bank.system.db.controllers.BankAccountController;
 import com.bank.system.models.Response;
 
 @RestController
-public class AccountController {
+public class AccountControllerForTest {
 
-	@RequestMapping(value = "/api/signup", method = RequestMethod.POST)
+	@RequestMapping(value = "/api/test/signup", method = RequestMethod.GET)
 	public String signup(@RequestParam(name = "email", required = true) String email,
 			@RequestParam(name = "password", required = true) String password) {
 
@@ -35,7 +35,7 @@ public class AccountController {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/signin", method = RequestMethod.POST)
+	@RequestMapping(value = "/api/test/signin", method = RequestMethod.GET)
 	public String signin(@RequestParam(name = "email", required = true) String email,
 			@RequestParam(name = "password", required = true) String password) {
 
@@ -54,7 +54,7 @@ public class AccountController {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/account/deposite", method = RequestMethod.POST)
+	@RequestMapping(value = "/api/test/account/deposite", method = RequestMethod.GET)
 	public String deposit(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) String account,
 			@RequestParam(name = "amount", required = true) BigDecimal amount) {
@@ -71,7 +71,7 @@ public class AccountController {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/account/withdraw", method = RequestMethod.POST)
+	@RequestMapping(value = "/api/test/account/withdraw", method = RequestMethod.GET)
 	public String withdraw(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) String account,
 			@RequestParam(name = "amount", required = true) BigDecimal amount) {
@@ -88,7 +88,7 @@ public class AccountController {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/account/getBalance", method = RequestMethod.POST)
+	@RequestMapping(value = "/api/test/account/getBalance", method = RequestMethod.GET)
 	public String getBalance(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) String account) {
 
@@ -104,7 +104,7 @@ public class AccountController {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/account/view/transactions", method = RequestMethod.POST)
+	@RequestMapping(value = "/api/test/account/view/transactions", method = RequestMethod.GET)
 	public String viewTransactions(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) String account,
 			@RequestParam(name = "from", required = true) @DateTimeFormat(pattern = "dd.MM.yyyy") Date from,

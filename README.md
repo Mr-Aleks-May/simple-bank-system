@@ -5,6 +5,7 @@
 1. Установка и запуск
 2. Робота с БД.
 3. Примеры запросов.  
+4. API для тестирования
   
    
   
@@ -84,7 +85,7 @@ password: qwerty1
 
 ### III. Examles of requests
 **1. Запрос для регистрации нового клиента:**\
-`http://localhost:8080/api/signup?email=test@test.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
+<**POST**> `http://localhost:8080/api/signup?email=test@test.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -97,7 +98,7 @@ password: qwerty1
 
 
 **2. Запрос аутентификации от клиента:**\
-`http://localhost:8080/api/signin?email=test@test.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
+<**POST**> `http://localhost:8080/api/signin?email=test@test.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -115,7 +116,7 @@ password: qwerty1
 
 
 **3. Запрос на внесение средств на счет:**\
-`http://localhost:8080/api/account/deposite?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary&amount=100.66`
+<**POST**> `http://localhost:8080/api/account/deposite?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary&amount=100.66`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -130,7 +131,7 @@ password: qwerty1
 
 
 **4. Запрос на снятие средств со счета:**\
-`http://localhost:8080/api/account/withdraw?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary&amount=75.66`
+<**POST**> `http://localhost:8080/api/account/withdraw?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary&amount=75.66`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -146,7 +147,7 @@ password: qwerty1
 
 
 **5. Запрос остатка на счету:**\
-`http://localhost:8080/api/account/getBalance?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary`
+<**POST**> `http://localhost:8080/api/account/getBalance?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -161,7 +162,7 @@ password: qwerty1
 
 
 **6. Запрос на получение истории транзакций:**\
-`http://localhost:8080/api/account/view/transactions?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary&from=1.01.2020&to=2.2.2020`
+<**POST**> `http://localhost:8080/api/account/view/transactions?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW&account=primary&from=1.01.2020&to=2.2.2020`
 
 ***Возможные ответы:***\
 Параметр "status":  
@@ -169,3 +170,13 @@ password: qwerty1
 100 - не коректный токен.\
 200 - дата в параметре from больше даты в параметре to (должно быть наоборот).\
 -1 - при выполнении запроса на сервере произошла ошибка.
+
+
+
+### IV. API requests for testing
+<**GET**> `http://localhost:8080/api/test/signup?email=user@test.com&password=5f4dcc3b5aa765d61d8327deb882cf99`  
+<**GET**> `http://localhost:8080/api/test/signin?email=user@test.com&password=5f4dcc3b5aa765d61d8327deb882cf99`  
+<**GET**> `http://localhost:8080/api/test/account/deposite?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=primary&amount=100`  
+<**GET**> `http://localhost:8080/api/test/account/withdraw?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=primary&amount=75.06`  
+<**GET**> `http://localhost:8080/api/test/account/getBalance?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=primary`  
+<**GET**> `http://localhost:8080/api/test/account/view/transactions?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=primary&from=1.1.2020&to=2.2.2020`  
