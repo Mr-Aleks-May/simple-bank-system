@@ -32,7 +32,7 @@ public class AccountController {
 			response = ba.signup(email, password);
 		}
 
-		return "Email: " + email + " password: " + password + " " + response;
+		return response.toJSON();
 	}
 
 	@RequestMapping(value = "/api/signin", method = RequestMethod.GET)
@@ -51,7 +51,7 @@ public class AccountController {
 			response = ba.signin(email, password);
 		}
 
-		return response + "";
+		return response.toJSON();
 	}
 
 	@RequestMapping(value = "/api/account/deposite", method = RequestMethod.GET)
@@ -72,8 +72,7 @@ public class AccountController {
 			response = ba.deposit(token, account, am);
 		}
 
-		return "You deposite on " + account + " " + amount + " " + response;
-		// return "{\"token\":\"UYFJH567GHVBN\"}";
+		return response.toJSON();
 	}
 
 	@RequestMapping(value = "/api/account/withdraw", method = RequestMethod.GET)
@@ -94,7 +93,7 @@ public class AccountController {
 			response = ba.withdraw(token, account, am);
 		}
 
-		return response.toString();
+		return response.toJSON();
 	}
 
 	@RequestMapping(value = "/api/account/getBalance", method = RequestMethod.GET)
@@ -110,7 +109,7 @@ public class AccountController {
 			response = ba.getBalance(token, account);
 		}
 
-		return response.toString();
+		return response.toJSON();
 	}
 
 	@RequestMapping(value = "/api/account/view/transactions", method = RequestMethod.GET)
@@ -122,8 +121,6 @@ public class AccountController {
 		BankAccountController ba = new BankAccountController();
 		Response response = ba.getTransactions(token, account, from, to);
 
-		return response.toString();
+		return response.toJSON();
 	}
-
-	// @RequestParam(name = "action", required = true) String action,
 }

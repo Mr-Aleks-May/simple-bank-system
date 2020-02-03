@@ -3,6 +3,7 @@ package com.bank.system.db.controllers;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.text.SimpleDateFormat;
@@ -34,13 +35,19 @@ public class BankAccountController {
 		}
 
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format("INSERT INTO customers(email, password) VALUES('%s','%s');", email, password);
-			stmt.executeUpdate(sql);
+			PreparedStatement stmt = null;
 
-			sql = String.format("SELECT id FROM customers WHERE email='%s' LIMIT 1;", email);
-			ResultSet rs = stmt.executeQuery(sql);
+			stmt = connection.prepareStatement("INSERT INTO customers(email, password) VALUES(?, ?);");
+			stmt.setString(1, email);
+			stmt.setString(2, password);
+			stmt.executeUpdate();
+
+			stmt.close();
+			stmt = connection.prepareStatement("SELECT id FROM customers WHERE email=? LIMIT 1;");
+			stmt.setString(1, email);
+			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 2);
@@ -48,9 +55,14 @@ public class BankAccountController {
 
 			int customer_id = rs.getInt("id");
 
-			sql = String.format("INSERT INTO primary_account(customer_id, balance, currency) VALUES('%s', '%d', '%s');",
-					customer_id, 0, 980);
-			stmt.executeUpdate(sql);
+			stmt.close();
+			stmt = connection
+					.prepareStatement("INSERT INTO primary_account(customer_id, balance, currency) VALUES(?, ?, ?);");
+			stmt.setInt(1, customer_id);
+			stmt.setBigDecimal(2, new BigDecimal(0));
+			stmt.setInt(3, 980);
+			stmt.executeUpdate();
+			stmt.close();
 
 			return new Response().add("status", 0);
 		} catch (Exception e) {
@@ -63,10 +75,13 @@ public class BankAccountController {
 
 	public Response signin(String email, String password) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format("SELECT id, email, password FROM customers WHERE email='%s' LIMIT 1;", email);
-			ResultSet rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = null;
+
+			stmt = connection.prepareStatement("SELECT id, email, password FROM customers WHERE email=? LIMIT 1;");
+			stmt.setString(1, email);
+			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 1);
@@ -81,11 +96,19 @@ public class BankAccountController {
 
 			String token = new com.bank.system.controllers.Token().generateToken();
 			if (isTokenExist(customer_id)) {
-				sql = String.format("UPDATE tokens set token='%2$s' WHERE customer_id='%1$d';", customer_id, token);
-				stmt.executeUpdate(sql);
+				stmt.close();
+				stmt = connection.prepareStatement("UPDATE tokens set token=? WHERE customer_id=?;");
+				stmt.setInt(2, customer_id);
+				stmt.setString(1, token);
+				stmt.executeUpdate();
+				stmt.close();
 			} else {
-				sql = String.format("INSERT INTO tokens(customer_id, token) VALUES('%d','%s');", customer_id, token);
-				stmt.executeUpdate(sql);
+				stmt.close();
+				stmt = connection.prepareStatement("INSERT INTO tokens(customer_id, token) VALUES(?, ?);");
+				stmt.setInt(1, customer_id);
+				stmt.setString(2, token);
+				stmt.executeUpdate();
+				stmt.close();
 			}
 
 			return new Response().add("status", 0).add("token", token);
@@ -99,12 +122,19 @@ public class BankAccountController {
 
 	private boolean isCustomerExist(String email) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format("SELECT email FROM customers WHERE email='%s' LIMIT 1;", email);
-			ResultSet rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = null;
 
-			if (rs.next()) {
+			stmt = connection.prepareStatement("SELECT email FROM customers WHERE email=? LIMIT 1;");
+			stmt.setString(1, email);
+			ResultSet rs = stmt.executeQuery();
+
+			boolean isEntityAlreadyExist = rs.next();
+
+			stmt.close();
+
+			if (isEntityAlreadyExist) {
 				return true;
 			}
 		} catch (Exception e) {
@@ -117,12 +147,19 @@ public class BankAccountController {
 
 	private boolean isTokenExist(int customer_id) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format("SELECT customer_id FROM tokens WHERE customer_id='%d' LIMIT 1;", customer_id);
-			ResultSet rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = null;
 
-			if (rs.next()) {
+			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE customer_id=? LIMIT 1;");
+			stmt.setInt(1, customer_id);
+			ResultSet rs = stmt.executeQuery();
+
+			boolean isEntityAlreadyExist = rs.next();
+
+			stmt.close();
+
+			if (isEntityAlreadyExist) {
 				return true;
 			}
 		} catch (Exception e) {
@@ -133,17 +170,39 @@ public class BankAccountController {
 		return false;
 	}
 
-	public BankAccountInfo findCustomerAccount(String token) {
+	public int findCustomerAccountIdBy(String token) {
+		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
+				DBSettings.getPassword());) {
 
-		return null;
+			PreparedStatement stmt = null;
+
+			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");
+			stmt.setString(1, token);
+			ResultSet rs = stmt.executeQuery();
+
+			if (rs.next()) {
+				int customerId = rs.getInt("customer_id");
+				stmt.close();
+
+				return customerId;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		}
+
+		return -1;
 	}
 
 	public Response deposit(String token, String account, BigDecimal amount) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format("SELECT customer_id FROM tokens WHERE token='%s' LIMIT 1;", token);
-			ResultSet rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = null;
+
+			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");
+			stmt.setString(1, token);
+			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 1);
@@ -151,8 +210,10 @@ public class BankAccountController {
 
 			int customer_id = rs.getInt("customer_id");
 
-			sql = String.format("SELECT * FROM primary_account WHERE customer_id='%d' LIMIT 1;", customer_id);
-			rs = stmt.executeQuery(sql);
+			stmt.close();
+			stmt = connection.prepareStatement("SELECT * FROM primary_account WHERE customer_id=? LIMIT 1;");
+			stmt.setInt(1, customer_id);
+			rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 2);
@@ -161,13 +222,23 @@ public class BankAccountController {
 			BigDecimal balance = rs.getBigDecimal("balance");
 			balance = balance.add(amount);
 
-			sql = String.format("UPDATE primary_account SET balance='%f' WHERE customer_id=%d;", balance, customer_id);
-			stmt.executeUpdate(sql);
+			stmt.close();
+			stmt = connection.prepareStatement("UPDATE primary_account SET balance=? WHERE customer_id=?;");
+			stmt.setBigDecimal(1, balance);
+			stmt.setInt(2, customer_id);
+			stmt.executeUpdate();
 
-			sql = String.format(
-					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES('%d', '%s', '%d', '%f', '%f');",
-					customer_id, java.time.LocalDateTime.now().toString().substring(0, 20), 0, balance, amount);
-			stmt.executeUpdate(sql);
+			stmt.close();
+			stmt = connection.prepareStatement(
+					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");
+			stmt.setInt(1, customer_id);
+			stmt.setString(2, "deposit " + java.time.LocalDateTime.now().getNano());
+			stmt.setInt(3, 0);
+			stmt.setBigDecimal(4, balance);
+			stmt.setBigDecimal(5, amount);
+			stmt.executeUpdate();
+
+			stmt.close();
 
 			return new Response().add("status", 0).add("balance", balance);
 		} catch (Exception e) {
@@ -180,10 +251,13 @@ public class BankAccountController {
 
 	public Response withdraw(String token, String account, BigDecimal amount) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format("SELECT customer_id FROM tokens WHERE token='%s' LIMIT 1;", token);
-			ResultSet rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = null;
+
+			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");
+			stmt.setString(1, token);
+			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 1);
@@ -191,8 +265,10 @@ public class BankAccountController {
 
 			int customer_id = rs.getInt("customer_id");
 
-			sql = String.format("SELECT * FROM primary_account WHERE customer_id='%d' LIMIT 1;", customer_id);
-			rs = stmt.executeQuery(sql);
+			stmt.close();
+			stmt = connection.prepareStatement("SELECT * FROM primary_account WHERE customer_id=? LIMIT 1;");
+			stmt.setInt(1, customer_id);
+			rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 2);
@@ -203,13 +279,23 @@ public class BankAccountController {
 				return new Response().add("status", 3).add("balance", balance);
 			}
 
-			sql = String.format("UPDATE primary_account SET balance='%f' WHERE customer_id=%d;", balance, customer_id);
-			stmt.executeUpdate(sql);
+			stmt.close();
+			stmt = connection.prepareStatement("UPDATE primary_account SET balance=? WHERE customer_id=?;");
+			stmt.setBigDecimal(1, balance);
+			stmt.setInt(2, customer_id);
+			stmt.executeUpdate();
 
-			sql = String.format(
-					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES('%d', '%s', '%d', '%f', '%f');",
-					customer_id, java.time.LocalDateTime.now().toString().substring(0, 20), 1, balance, amount);
-			stmt.executeUpdate(sql);
+			stmt.close();
+			stmt = connection.prepareStatement(
+					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");
+			stmt.setInt(1, customer_id);
+			stmt.setString(2, "deposit " + java.time.LocalDateTime.now().toString().substring(0, 20));
+			stmt.setInt(3, 0);
+			stmt.setBigDecimal(4, balance);
+			stmt.setBigDecimal(5, amount);
+			stmt.executeUpdate();
+
+			stmt.close();
 
 			return new Response().add("status", 0).add("balance", balance);
 		} catch (Exception e) {
@@ -222,18 +308,22 @@ public class BankAccountController {
 
 	public Response getBalance(String token, String account) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+				DBSettings.getPassword());) {
 
-			String sql = String.format(
-					"SELECT * FROM primary_account WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token='%s' LIMIT 1) LIMIT 1;",
-					token);
-			ResultSet rs = stmt.executeQuery(sql);
+			PreparedStatement stmt = null;
+
+			stmt = connection.prepareStatement(
+					"SELECT * FROM primary_account WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token=? LIMIT 1) LIMIT 1;");
+			stmt.setString(1, token);
+			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 1);
 			}
 
 			BigDecimal balance = rs.getBigDecimal("balance");
+
+			stmt.close();
 
 			return new Response().add("status", 0).add("balance", balance);
 		} catch (Exception e) {
@@ -244,28 +334,34 @@ public class BankAccountController {
 		}
 	}
 
-	public Response getTransactions(String token, String account, Date from, Date to) {
-		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
-				DBSettings.getPassword()); Statement stmt = connection.createStatement();) {
+	public Response getTransactions(String token, String account, java.util.Date from, java.util.Date to) {
+		return getTransactions(token, account, new java.sql.Date(from.getTime()), new java.sql.Date(to.getTime()));
+	}
 
-			String sql = String.format(
-					"SELECT * FROM primary_account_transactions WHERE date BETWEEN to_date('%s','YYYY-MM-DD') AND to_date('%s','YYYY-MM-DD');",
-					new SimpleDateFormat("yyyy-MM-dd").format(from), new SimpleDateFormat("yyyy-MM-dd").format(to),
-					token);
-			ResultSet rs = stmt.executeQuery(sql);
+	public Response getTransactions(String token, String account, java.sql.Date from, java.sql.Date to) {
+		if (!to.after(from) && !to.equals(from)) {
+			return new Response().add("status", 2);
+		}
+
+		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
+				DBSettings.getPassword());) {
+
+			PreparedStatement stmt = null;
+
+			stmt = connection.prepareStatement(
+					"SELECT * FROM primary_account_transactions WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token=? LIMIT 1) AND  date BETWEEN ? AND ?;");
+			stmt.setString(1, token);
+			stmt.setDate(2, from);
+			stmt.setDate(3, to);
+			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
 				return new Response().add("status", 1);
 			}
 
-			Response response = new Response();
-			response.add("status", 0);
+			stmt.close();
 
-			do {
-				response.add("transaction", rs.getBigDecimal("amount"));
-				return response;
-			} while (rs.next());
-
+			return new Response().add("status", 0).add("transaction", rs);
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.err.println(e.getClass().getName() + ": " + e.getMessage());
