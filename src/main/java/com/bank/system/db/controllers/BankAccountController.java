@@ -25,7 +25,7 @@ public class BankAccountController {
 	 * 
 	 * @param email    - customer email address
 	 * @param password - customer password (in form of md5 hash, with length 32)
-	 * @return Return: 0 - if successfuly register, 1 - if customer already exist.
+	 * @return Return: 0 - if successfuly register, 200 - if customer already exist.
 	 *         In case of error return -1.
 	 */
 	public Response signup(String email, String password) {
@@ -334,7 +334,7 @@ public class BankAccountController {
 								"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");) {
 							stmt4.setInt(1, customer_id);
 							stmt4.setString(2, "withdraw " + java.time.LocalDateTime.now().getNano());
-							stmt4.setInt(3, 0);
+							stmt4.setInt(3, 1);
 							stmt4.setBigDecimal(4, balance);
 							stmt4.setBigDecimal(5, amount);
 							stmt4.executeUpdate();

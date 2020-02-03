@@ -27,12 +27,27 @@ public class Response {
 		return this;
 	}
 
+	public Response add(String key, byte value) {
+		params.put(key, value + "");
+		return this;
+	}
+
 	public Response add(String key, int value) {
 		params.put(key, value + "");
 		return this;
 	}
 
 	public Response add(String key, long value) {
+		params.put(key, value + "");
+		return this;
+	}
+
+	public Response add(String key, float value) {
+		params.put(key, value + "");
+		return this;
+	}
+
+	public Response add(String key, double value) {
 		params.put(key, value + "");
 		return this;
 	}
@@ -60,7 +75,10 @@ public class Response {
 			StringWriter sw = new StringWriter();
 			objectMapper.writeValue(sw, objectNode);
 
-			this.params.put(key, sw.toString());
+			String json = sw.toString();
+			json = json.substring(11, json.length() - 1);
+
+			this.params.put(key, json);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -94,7 +112,10 @@ public class Response {
 
 		sb.append("{");
 		for (Entry<String, String> param : params.entrySet()) {
-			sb.append(String.format("\"%s\":\"%s\",", param.getKey(), param.getValue()));
+			if (param.getValue().charAt(0) != '[')
+				sb.append(String.format("\"%s\":\"%s\",", param.getKey(), param.getValue()));
+			else
+				sb.append(String.format("\"%s\":%s,", param.getKey(), param.getValue()));
 		}
 		sb.deleteCharAt(sb.length() - 1);
 		sb.append("}");
