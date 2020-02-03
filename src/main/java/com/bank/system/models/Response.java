@@ -59,6 +59,8 @@ public class Response {
 			// generate all
 			StringWriter sw = new StringWriter();
 			objectMapper.writeValue(sw, objectNode);
+
+			this.params.put(key, sw.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

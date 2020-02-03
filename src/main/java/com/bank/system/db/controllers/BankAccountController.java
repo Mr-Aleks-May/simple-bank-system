@@ -31,7 +31,7 @@ public class BankAccountController {
 	 */
 	public Response signup(String email, String password) {
 		if (isCustomerExist(email)) {
-			return new Response().add("status", 1);
+			return new Response().add("status", 200);
 		}
 
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
@@ -50,7 +50,7 @@ public class BankAccountController {
 			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 2);
+				return new Response().add("status", 201);
 			}
 
 			int customer_id = rs.getInt("id");
@@ -84,14 +84,14 @@ public class BankAccountController {
 			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 1);
+				return new Response().add("status", 200);
 			}
 
 			int customer_id = rs.getInt("id");
 			String customerPassword = rs.getString("password");
 
 			if (!customerPassword.equals(password)) {
-				return new Response().add("status", 2);
+				return new Response().add("status", 201);
 			}
 
 			String token = new com.bank.system.controllers.Token().generateToken();
@@ -205,7 +205,7 @@ public class BankAccountController {
 			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 1);
+				return new Response().add("status", 200);
 			}
 
 			int customer_id = rs.getInt("customer_id");
@@ -216,7 +216,7 @@ public class BankAccountController {
 			rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 2);
+				return new Response().add("status", 201);
 			}
 
 			BigDecimal balance = rs.getBigDecimal("balance");
@@ -260,7 +260,7 @@ public class BankAccountController {
 			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 1);
+				return new Response().add("status", 200);
 			}
 
 			int customer_id = rs.getInt("customer_id");
@@ -271,12 +271,12 @@ public class BankAccountController {
 			rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 2);
+				return new Response().add("status", 201);
 			}
 
 			BigDecimal balance = rs.getBigDecimal("balance");
 			if ((balance = balance.subtract(amount)).compareTo(BigDecimal.ZERO) < 0) {
-				return new Response().add("status", 3).add("balance", balance);
+				return new Response().add("status", 202).add("balance", balance);
 			}
 
 			stmt.close();
@@ -289,7 +289,7 @@ public class BankAccountController {
 			stmt = connection.prepareStatement(
 					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");
 			stmt.setInt(1, customer_id);
-			stmt.setString(2, "deposit " + java.time.LocalDateTime.now().toString().substring(0, 20));
+			stmt.setString(2, "deposit " + java.time.LocalDateTime.now().getNano());
 			stmt.setInt(3, 0);
 			stmt.setBigDecimal(4, balance);
 			stmt.setBigDecimal(5, amount);
@@ -318,7 +318,7 @@ public class BankAccountController {
 			ResultSet rs = stmt.executeQuery();
 
 			if (!rs.next()) {
-				return new Response().add("status", 1);
+				return new Response().add("status", 200);
 			}
 
 			BigDecimal balance = rs.getBigDecimal("balance");
@@ -340,7 +340,7 @@ public class BankAccountController {
 
 	public Response getTransactions(String token, String account, java.sql.Date from, java.sql.Date to) {
 		if (!to.after(from) && !to.equals(from)) {
-			return new Response().add("status", 2);
+			return new Response().add("status", 200);
 		}
 
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
@@ -355,23 +355,16 @@ public class BankAccountController {
 			stmt.setDate(3, to);
 			ResultSet rs = stmt.executeQuery();
 
-			if (!rs.next()) {
-				return new Response().add("status", 1);
-			}
+			Response response = new Response().add("transaction", rs).add("status", 0);
 
 			stmt.close();
 
-			return new Response().add("status", 0).add("transaction", rs);
+			return response;
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.err.println(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
-
-		// return new Response().add("status", 0);
 	}
-
-//	System.out.println(Class.forName("org.postgresql.Driver"));
-
 }

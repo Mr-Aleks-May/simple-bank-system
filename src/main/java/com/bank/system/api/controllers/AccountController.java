@@ -24,9 +24,9 @@ public class AccountController {
 
 		Validations vs = new Validations();
 		if (!vs.isValidEmail(email)) {
-			response = new Response().add("status", 4);
+			response = new Response().add("status", 100);
 		} else if (password.length() != 32) {
-			response = new Response().add("status", 5);
+			response = new Response().add("status", 101);
 		} else {
 			BankAccountController ba = new BankAccountController();
 			response = ba.signup(email, password);
@@ -43,9 +43,9 @@ public class AccountController {
 
 		Validations vs = new Validations();
 		if (!vs.isValidEmail(email)) {
-			response = new Response().add("status", 4);
+			response = new Response().add("status", 100);
 		} else if (password.length() != 32) {
-			response = new Response().add("status", 5);
+			response = new Response().add("status", 101);
 		} else {
 			BankAccountController ba = new BankAccountController();
 			response = ba.signin(email, password);
@@ -57,19 +57,15 @@ public class AccountController {
 	@RequestMapping(value = "/api/account/deposite", method = RequestMethod.GET)
 	public String deposit(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) String account,
-			@RequestParam(name = "amount", required = true) String amount) {
+			@RequestParam(name = "amount", required = true) BigDecimal amount) {
 
 		Response response = null;
 
-		Validations vs = new Validations();
 		if (token.length() != 32) {
-			response = new Response().add("status", 4);
-		} else if (!vs.isValidDecimalNumber(amount)) {
-			response = new Response().add("status", 5);
+			response = new Response().add("status", 100);
 		} else {
-			BigDecimal am = new BigDecimal(amount);
 			BankAccountController ba = new BankAccountController();
-			response = ba.deposit(token, account, am);
+			response = ba.deposit(token, account, amount);
 		}
 
 		return response.toJSON();
@@ -78,19 +74,15 @@ public class AccountController {
 	@RequestMapping(value = "/api/account/withdraw", method = RequestMethod.GET)
 	public String withdraw(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) String account,
-			@RequestParam(name = "amount", required = true) String amount) {
+			@RequestParam(name = "amount", required = true) BigDecimal amount) {
 
 		Response response = null;
 
-		Validations vs = new Validations();
 		if (token.length() != 32) {
-			response = new Response().add("status", 4);
-		} else if (!vs.isValidDecimalNumber(amount)) {
-			response = new Response().add("status", 5);
+			response = new Response().add("status", 100);
 		} else {
-			BigDecimal am = new BigDecimal(amount);
 			BankAccountController ba = new BankAccountController();
-			response = ba.withdraw(token, account, am);
+			response = ba.withdraw(token, account, amount);
 		}
 
 		return response.toJSON();
@@ -103,7 +95,7 @@ public class AccountController {
 		Response response = null;
 
 		if (token.length() != 32) {
-			response = new Response().add("status", 4);
+			response = new Response().add("status", 100);
 		} else {
 			BankAccountController ba = new BankAccountController();
 			response = ba.getBalance(token, account);
@@ -118,8 +110,14 @@ public class AccountController {
 			@RequestParam(name = "from", required = true) @DateTimeFormat(pattern = "dd.MM.yyyy") Date from,
 			@RequestParam(name = "to", required = true) @DateTimeFormat(pattern = "dd.MM.yyyy") Date to) {
 
-		BankAccountController ba = new BankAccountController();
-		Response response = ba.getTransactions(token, account, from, to);
+		Response response = null;
+
+		if (token.length() != 32) {
+			response = new Response().add("status", 100);
+		} else {
+			BankAccountController ba = new BankAccountController();
+			response = ba.getTransactions(token, account, from, to);
+		}
 
 		return response.toJSON();
 	}
