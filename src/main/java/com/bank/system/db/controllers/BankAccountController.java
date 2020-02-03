@@ -5,11 +5,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Statement;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.sql.SQLException;
 import java.util.List;
 
+import com.bank.system.controllers.Logger;
 import com.bank.system.db.models.DBSettings;
 import com.bank.system.models.BankAccountInfo;
 import com.bank.system.models.Response;
@@ -37,84 +36,103 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("INSERT INTO customers(email, password) VALUES(?, ?);");
-			stmt.setString(1, email);
-			stmt.setString(2, password);
-			stmt.executeUpdate();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("INSERT INTO customers(email, password) VALUES(?, ?);");) {
+				stmt1.setString(1, email);
+				stmt1.setString(2, password);
+				stmt1.executeUpdate();
 
-			stmt.close();
-			stmt = connection.prepareStatement("SELECT id FROM customers WHERE email=? LIMIT 1;");
-			stmt.setString(1, email);
-			ResultSet rs = stmt.executeQuery();
+				try (PreparedStatement stmt2 = connection
+						.prepareStatement("SELECT id FROM customers WHERE email=? LIMIT 1;");) {
+					stmt2.setString(1, email);
+					ResultSet rs = stmt2.executeQuery();
 
-			if (!rs.next()) {
-				return new Response().add("status", 201);
+					if (!rs.next()) {
+						return new Response().add("status", 201);
+					}
+
+					int customer_id = rs.getInt("id");
+
+					try (PreparedStatement stmt3 = connection.prepareStatement(
+							"INSERT INTO primary_account(customer_id, balance, currency) VALUES(?, ?, ?);");) {
+						stmt3.setInt(1, customer_id);
+						stmt3.setBigDecimal(2, new BigDecimal(0));
+						stmt3.setInt(3, 980);
+						stmt3.executeUpdate();
+
+						connection.commit();
+
+						return new Response().add("status", 0);
+					}
+				}
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
+
+				return new Response().add("status", -1);
 			}
-
-			int customer_id = rs.getInt("id");
-
-			stmt.close();
-			stmt = connection
-					.prepareStatement("INSERT INTO primary_account(customer_id, balance, currency) VALUES(?, ?, ?);");
-			stmt.setInt(1, customer_id);
-			stmt.setBigDecimal(2, new BigDecimal(0));
-			stmt.setInt(3, 980);
-			stmt.executeUpdate();
-			stmt.close();
-
-			return new Response().add("status", 0);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		} catch (SQLException e) {
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
+
 	}
 
 	public Response signin(String email, String password) {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("SELECT id, email, password FROM customers WHERE email=? LIMIT 1;");
-			stmt.setString(1, email);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("SELECT id, email, password FROM customers WHERE email=? LIMIT 1;");) {
+				stmt1.setString(1, email);
+				ResultSet rs = stmt1.executeQuery();
 
-			if (!rs.next()) {
-				return new Response().add("status", 200);
+				if (!rs.next()) {
+					return new Response().add("status", 200);
+				}
+
+				int customer_id = rs.getInt("id");
+				String customerPassword = rs.getString("password");
+
+				if (!customerPassword.equals(password)) {
+					return new Response().add("status", 201);
+				}
+
+				String token = new com.bank.system.controllers.Token().generateToken();
+
+				if (isTokenExist(customer_id)) {
+					try (PreparedStatement stmt2 = connection
+							.prepareStatement("UPDATE tokens set token=? WHERE customer_id=?;");) {
+						stmt2.setInt(2, customer_id);
+						stmt2.setString(1, token);
+						stmt2.executeUpdate();
+					}
+				} else {
+					try (PreparedStatement stmt2 = connection
+							.prepareStatement("INSERT INTO tokens(customer_id, token) VALUES(?, ?);");) {
+						stmt2.setInt(1, customer_id);
+						stmt2.setString(2, token);
+						stmt2.executeUpdate();
+					}
+				}
+
+				connection.commit();
+
+				return new Response().add("status", 0).add("token", token);
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
+
+				return new Response().add("status", -1);
 			}
 
-			int customer_id = rs.getInt("id");
-			String customerPassword = rs.getString("password");
-
-			if (!customerPassword.equals(password)) {
-				return new Response().add("status", 201);
-			}
-
-			String token = new com.bank.system.controllers.Token().generateToken();
-			if (isTokenExist(customer_id)) {
-				stmt.close();
-				stmt = connection.prepareStatement("UPDATE tokens set token=? WHERE customer_id=?;");
-				stmt.setInt(2, customer_id);
-				stmt.setString(1, token);
-				stmt.executeUpdate();
-				stmt.close();
-			} else {
-				stmt.close();
-				stmt = connection.prepareStatement("INSERT INTO tokens(customer_id, token) VALUES(?, ?);");
-				stmt.setInt(1, customer_id);
-				stmt.setString(2, token);
-				stmt.executeUpdate();
-				stmt.close();
-			}
-
-			return new Response().add("status", 0).add("token", token);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		} catch (SQLException e) {
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
@@ -124,22 +142,26 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("SELECT email FROM customers WHERE email=? LIMIT 1;");
-			stmt.setString(1, email);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("SELECT email FROM customers WHERE email=? LIMIT 1;");) {
+				stmt1.setString(1, email);
+				ResultSet rs = stmt1.executeQuery();
 
-			boolean isEntityAlreadyExist = rs.next();
+				boolean isEntityAlreadyExist = rs.next();
 
-			stmt.close();
+				connection.commit();
 
-			if (isEntityAlreadyExist) {
-				return true;
+				if (isEntityAlreadyExist) {
+					return true;
+				}
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		} catch (SQLException e) {
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 		}
 
 		return false;
@@ -149,22 +171,26 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE customer_id=? LIMIT 1;");
-			stmt.setInt(1, customer_id);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("SELECT customer_id FROM tokens WHERE customer_id=? LIMIT 1;");) {
+				stmt1.setInt(1, customer_id);
+				ResultSet rs = stmt1.executeQuery();
 
-			boolean isEntityAlreadyExist = rs.next();
+				boolean isEntityAlreadyExist = rs.next();
 
-			stmt.close();
+				connection.commit();
 
-			if (isEntityAlreadyExist) {
-				return true;
+				if (isEntityAlreadyExist) {
+					return true;
+				}
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		} catch (SQLException e) {
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 		}
 
 		return false;
@@ -174,21 +200,27 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");
-			stmt.setString(1, token);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");) {
+				stmt1.setString(1, token);
+				ResultSet rs = stmt1.executeQuery();
 
-			if (rs.next()) {
-				int customerId = rs.getInt("customer_id");
-				stmt.close();
+				if (rs.next()) {
+					int customerId = rs.getInt("customer_id");
+					stmt1.close();
 
-				return customerId;
+					connection.commit();
+
+					return customerId;
+				}
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		} catch (SQLException e) {
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 		}
 
 		return -1;
@@ -198,52 +230,62 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");
-			stmt.setString(1, token);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");) {
+				stmt1.setString(1, token);
+				ResultSet rs = stmt1.executeQuery();
 
-			if (!rs.next()) {
-				return new Response().add("status", 200);
+				if (!rs.next()) {
+					return new Response().add("status", 200);
+				}
+
+				int customer_id = rs.getInt("customer_id");
+
+				try (PreparedStatement smt2 = connection
+						.prepareStatement("SELECT * FROM primary_account WHERE customer_id=? LIMIT 1;");) {
+					smt2.setInt(1, customer_id);
+
+					rs = smt2.executeQuery();
+
+					if (!rs.next()) {
+						return new Response().add("status", 201);
+					}
+
+					BigDecimal balance = rs.getBigDecimal("balance");
+					balance = balance.add(amount);
+
+					try (PreparedStatement stmt3 = connection
+							.prepareStatement("UPDATE primary_account SET balance=? WHERE customer_id=?;");) {
+						stmt3.setBigDecimal(1, balance);
+
+						stmt3.setInt(2, customer_id);
+						stmt3.executeUpdate();
+
+						try (PreparedStatement stmt4 = connection.prepareStatement(
+								"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");) {
+							stmt4.setInt(1, customer_id);
+							stmt4.setString(2, "deposit " + java.time.LocalDateTime.now().getNano());
+							stmt4.setInt(3, 0);
+							stmt4.setBigDecimal(4, balance);
+							stmt4.setBigDecimal(5, amount);
+							stmt4.executeUpdate();
+
+							connection.commit();
+
+							return new Response().add("status", 0).add("balance", balance);
+						}
+					}
+				}
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
+
+				return new Response().add("status", -1);
 			}
-
-			int customer_id = rs.getInt("customer_id");
-
-			stmt.close();
-			stmt = connection.prepareStatement("SELECT * FROM primary_account WHERE customer_id=? LIMIT 1;");
-			stmt.setInt(1, customer_id);
-			rs = stmt.executeQuery();
-
-			if (!rs.next()) {
-				return new Response().add("status", 201);
-			}
-
-			BigDecimal balance = rs.getBigDecimal("balance");
-			balance = balance.add(amount);
-
-			stmt.close();
-			stmt = connection.prepareStatement("UPDATE primary_account SET balance=? WHERE customer_id=?;");
-			stmt.setBigDecimal(1, balance);
-			stmt.setInt(2, customer_id);
-			stmt.executeUpdate();
-
-			stmt.close();
-			stmt = connection.prepareStatement(
-					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");
-			stmt.setInt(1, customer_id);
-			stmt.setString(2, "deposit " + java.time.LocalDateTime.now().getNano());
-			stmt.setInt(3, 0);
-			stmt.setBigDecimal(4, balance);
-			stmt.setBigDecimal(5, amount);
-			stmt.executeUpdate();
-
-			stmt.close();
-
-			return new Response().add("status", 0).add("balance", balance);
-		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+		} catch (SQLException e) {
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
@@ -253,54 +295,64 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");
-			stmt.setString(1, token);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection
+					.prepareStatement("SELECT customer_id FROM tokens WHERE token=? LIMIT 1;");) {
+				stmt1.setString(1, token);
+				ResultSet rs = stmt1.executeQuery();
 
-			if (!rs.next()) {
-				return new Response().add("status", 200);
+				if (!rs.next()) {
+					return new Response().add("status", 200);
+				}
+
+				int customer_id = rs.getInt("customer_id");
+
+				try (PreparedStatement smt2 = connection
+						.prepareStatement("SELECT * FROM primary_account WHERE customer_id=? LIMIT 1;");) {
+					smt2.setInt(1, customer_id);
+
+					rs = smt2.executeQuery();
+
+					if (!rs.next()) {
+						return new Response().add("status", 201);
+					}
+
+					BigDecimal balance = rs.getBigDecimal("balance");
+					if ((balance = balance.subtract(amount)).compareTo(BigDecimal.ZERO) < 0) {
+						return new Response().add("status", 202).add("balance", balance.add(amount));
+					}
+
+					try (PreparedStatement stmt3 = connection
+							.prepareStatement("UPDATE primary_account SET balance=? WHERE customer_id=?;");) {
+						stmt3.setBigDecimal(1, balance);
+
+						stmt3.setInt(2, customer_id);
+						stmt3.executeUpdate();
+
+						try (PreparedStatement stmt4 = connection.prepareStatement(
+								"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");) {
+							stmt4.setInt(1, customer_id);
+							stmt4.setString(2, "withdraw " + java.time.LocalDateTime.now().getNano());
+							stmt4.setInt(3, 0);
+							stmt4.setBigDecimal(4, balance);
+							stmt4.setBigDecimal(5, amount);
+							stmt4.executeUpdate();
+
+							connection.commit();
+
+							return new Response().add("status", 0).add("balance", balance);
+						}
+					}
+				}
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
+
+				return new Response().add("status", -1);
 			}
-
-			int customer_id = rs.getInt("customer_id");
-
-			stmt.close();
-			stmt = connection.prepareStatement("SELECT * FROM primary_account WHERE customer_id=? LIMIT 1;");
-			stmt.setInt(1, customer_id);
-			rs = stmt.executeQuery();
-
-			if (!rs.next()) {
-				return new Response().add("status", 201);
-			}
-
-			BigDecimal balance = rs.getBigDecimal("balance");
-			if ((balance = balance.subtract(amount)).compareTo(BigDecimal.ZERO) < 0) {
-				return new Response().add("status", 202).add("balance", balance);
-			}
-
-			stmt.close();
-			stmt = connection.prepareStatement("UPDATE primary_account SET balance=? WHERE customer_id=?;");
-			stmt.setBigDecimal(1, balance);
-			stmt.setInt(2, customer_id);
-			stmt.executeUpdate();
-
-			stmt.close();
-			stmt = connection.prepareStatement(
-					"INSERT INTO primary_account_transactions(customer_id, name, type, balance_after, amount) VALUES(?, ?, ?, ?, ?);");
-			stmt.setInt(1, customer_id);
-			stmt.setString(2, "deposit " + java.time.LocalDateTime.now().getNano());
-			stmt.setInt(3, 0);
-			stmt.setBigDecimal(4, balance);
-			stmt.setBigDecimal(5, amount);
-			stmt.executeUpdate();
-
-			stmt.close();
-
-			return new Response().add("status", 0).add("balance", balance);
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
@@ -310,25 +362,31 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement(
-					"SELECT * FROM primary_account WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token=? LIMIT 1) LIMIT 1;");
-			stmt.setString(1, token);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection.prepareStatement(
+					"SELECT * FROM primary_account WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token=? LIMIT 1) LIMIT 1;");) {
 
-			if (!rs.next()) {
-				return new Response().add("status", 200);
+				stmt1.setString(1, token);
+				ResultSet rs = stmt1.executeQuery();
+
+				if (!rs.next()) {
+					return new Response().add("status", 200);
+				}
+
+				BigDecimal balance = rs.getBigDecimal("balance");
+
+				connection.commit();
+
+				return new Response().add("status", 0).add("balance", balance);
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
+
+				return new Response().add("status", -1);
 			}
-
-			BigDecimal balance = rs.getBigDecimal("balance");
-
-			stmt.close();
-
-			return new Response().add("status", 0).add("balance", balance);
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
@@ -346,23 +404,26 @@ public class BankAccountController {
 		try (Connection connection = DriverManager.getConnection(DBSettings.getAdrress(), DBSettings.getUser(),
 				DBSettings.getPassword());) {
 
-			PreparedStatement stmt = null;
+			connection.setAutoCommit(false);
 
-			stmt = connection.prepareStatement(
-					"SELECT * FROM primary_account_transactions WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token=? LIMIT 1) AND  date BETWEEN ? AND ?;");
-			stmt.setString(1, token);
-			stmt.setDate(2, from);
-			stmt.setDate(3, to);
-			ResultSet rs = stmt.executeQuery();
+			try (PreparedStatement stmt1 = connection.prepareStatement(
+					"SELECT * FROM primary_account_transactions WHERE customer_id IN (SELECT customer_id FROM tokens WHERE token=? LIMIT 1) AND  date BETWEEN ? AND ?;");) {
+				stmt1.setString(1, token);
+				stmt1.setDate(2, from);
+				stmt1.setDate(3, to);
+				ResultSet rs = stmt1.executeQuery();
 
-			Response response = new Response().add("transaction", rs).add("status", 0);
+				connection.commit();
 
-			stmt.close();
+				return new Response().add("transaction", rs).add("status", 0);
+			} catch (SQLException e) {
+				connection.rollback();
+				Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
-			return response;
+				return new Response().add("status", -1);
+			}
 		} catch (Exception e) {
-			e.printStackTrace();
-			System.err.println(e.getClass().getName() + ": " + e.getMessage());
+			Logger.log(e.getClass().getName() + ": " + e.getMessage());
 
 			return new Response().add("status", -1);
 		}
