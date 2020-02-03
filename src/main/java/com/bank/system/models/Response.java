@@ -1,8 +1,11 @@
 package com.bank.system.models;
 
+import java.io.IOException;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.json.simple.*;
 
 public class Response {
 	private Map<String, String> params;
@@ -26,8 +29,16 @@ public class Response {
 		return this;
 	}
 
-	public Response add(String key, Object value) {
-		params.put(key, value.toString());
+	public <T> Response add(String key, T value) {
+		try {
+			JSONObject obj = new JSONObject();
+			StringWriter sw = new StringWriter();
+			obj.writeJSONString(sw);
+			params.put(key, sw.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+			params.put(key, "NULL");
+		}
 		return this;
 	}
 
