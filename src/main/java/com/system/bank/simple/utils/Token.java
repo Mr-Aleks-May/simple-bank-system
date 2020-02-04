@@ -1,4 +1,4 @@
-package com.bank.system.controllers;
+package com.system.bank.simple.utils;
 
 import java.util.Random;
 

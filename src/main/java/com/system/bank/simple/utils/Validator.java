@@ -1,9 +1,9 @@
-package com.bank.system.controllers;
+package com.system.bank.simple.utils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class Validations {
+public class Validator {
 
 	public boolean isValidEmail(String email) {
 		String emailPattern = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"

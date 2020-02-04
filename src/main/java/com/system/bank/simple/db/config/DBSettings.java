@@ -1,4 +1,4 @@
-package com.bank.system.db.models;
+package com.system.bank.simple.db.config;
 
 public class DBSettings {
 	public static String adrress = "jdbc:postgresql://localhost:5432/bank";

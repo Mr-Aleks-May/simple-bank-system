@@ -1,4 +1,4 @@
-package com.bank.system.controllers;
+package com.system.bank.simple.utils;
 
 public class Logger {
 

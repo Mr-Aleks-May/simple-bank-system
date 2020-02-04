@@ -1,4 +1,4 @@
-package com.bank.system.api.controllers;
+package com.system.bank.simple.api.controllers;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
