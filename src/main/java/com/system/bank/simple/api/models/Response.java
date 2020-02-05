@@ -1,11 +1,9 @@
 package com.system.bank.simple.api.models;
 
-import java.io.IOException;
-import java.io.StringWriter;
 import java.math.BigDecimal;
-import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 public class Response {
 	private StringBuilder sb = null;
@@ -49,31 +47,22 @@ public class Response {
 		return this;
 	}
 
-	public <T> Response add(String key, List<T> value) {
-		try {
-			final StringWriter sw = new StringWriter();
-			final ObjectMapper mapper = new ObjectMapper();
-
-			mapper.writeValue(sw, value);
-
-			sb.insert(sb.length() - 1, "\"" + key + "\":" + sw.toString() + ",");
-		} catch (IOException e) {
-			sb.insert(sb.length() - 1, "\"" + key + "\":null,");
-			e.printStackTrace();
-		}
-
+	public <T> Response add(String key, T value) {
+		Gson gsonBuilder = new GsonBuilder().create();
+		String json = gsonBuilder.toJson(value);
+		sb.insert(sb.length() - 1, "\"" + key + "\":" + json + ",");
 		return this;
 	}
 
 	public String toJSON() {
-		if (sb.length() > 2)
-			return sb.deleteCharAt(sb.length() - 2).toString(); // Delete ','
-		else
-			return sb.toString();
+		return toString();
 	}
 
 	@Override
 	public String toString() {
-		return toJSON();
+		if (sb.length() > 2)
+			return sb.deleteCharAt(sb.length() - 2).toString(); // Delete ','
+		else
+			return sb.toString();
 	}
 }

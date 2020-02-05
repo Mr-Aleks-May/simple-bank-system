@@ -27,7 +27,7 @@ import com.system.bank.simple.utils.Validator;
 @RestController
 public class RESTAccountControllerForTest {
 
-	@RequestMapping(value = "/api/test/signup", method = RequestMethod.GET)
+	@RequestMapping(value = "/api/test/signup", method = RequestMethod.GET, produces = "application/json; charset=utf-8")
 	public String signup(@RequestParam(name = "email", required = true) String email,
 			@RequestParam(name = "password", required = true) String password) {
 
@@ -61,7 +61,7 @@ public class RESTAccountControllerForTest {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/test/signin", method = RequestMethod.GET)
+	@RequestMapping(value = "/api/test/signin", method = RequestMethod.GET, produces = "application/json; charset=utf-8")
 	public String signin(@RequestParam(name = "email", required = true) String email,
 			@RequestParam(name = "password", required = true) String password) {
 
@@ -90,7 +90,7 @@ public class RESTAccountControllerForTest {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/test/account/deposite", method = RequestMethod.GET)
+	@RequestMapping(value = "/api/test/account/deposite", method = RequestMethod.GET, produces = "application/json; charset=utf-8")
 	public String deposit(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) long account,
 			@RequestParam(name = "amount", required = true) BigDecimal amount) {
@@ -117,7 +117,7 @@ public class RESTAccountControllerForTest {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/test/account/withdraw", method = RequestMethod.GET)
+	@RequestMapping(value = "/api/test/account/withdraw", method = RequestMethod.GET, produces = "application/json; charset=utf-8")
 	public String withdraw(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) long account,
 			@RequestParam(name = "amount", required = true) BigDecimal amount) {
@@ -146,7 +146,7 @@ public class RESTAccountControllerForTest {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/test/account/get_balance", method = RequestMethod.GET)
+	@RequestMapping(value = "/api/test/account/get_balance", method = RequestMethod.GET, produces = "application/json; charset=utf-8")
 	public String getBalance(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) long account) {
 
@@ -172,7 +172,7 @@ public class RESTAccountControllerForTest {
 		return response.toJSON();
 	}
 
-	@RequestMapping(value = "/api/test/account/view/transactions", method = RequestMethod.GET)
+	@RequestMapping(value = "/api/test/account/view/transactions", method = RequestMethod.GET, produces = "application/json; charset=utf-8")
 	public String viewTransactions(@RequestParam(name = "token", required = true) String token,
 			@RequestParam(name = "account", required = true) long account,
 			@RequestParam(name = "from", required = true) @DateTimeFormat(pattern = "dd.MM.yyyy") Date from,

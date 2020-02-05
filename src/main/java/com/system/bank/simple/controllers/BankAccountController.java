@@ -403,8 +403,8 @@ public class BankAccountController implements IBankAccount {
 									stmt4.setInt(1, customer_id);
 									stmt4.setLong(2, account);
 									stmt4.setString(3, "deposit " + java.time.LocalDateTime.now().getNano());
-									stmt4.setShort(4, (short)0);
-									stmt4.setShort(5, (short)980);
+									stmt4.setShort(4, (short) 0);
+									stmt4.setShort(5, (short) 980);
 									stmt4.setBigDecimal(6, balance);
 									stmt4.setBigDecimal(7, amount);
 									stmt4.executeUpdate();
@@ -475,8 +475,8 @@ public class BankAccountController implements IBankAccount {
 									stmt4.setInt(1, customer_id);
 									stmt4.setLong(2, account);
 									stmt4.setString(3, "withdraw " + java.time.LocalDateTime.now().getNano());
-									stmt4.setShort(4, (short)1);
-									stmt4.setShort(5, (short)980);
+									stmt4.setShort(4, (short) 1);
+									stmt4.setShort(5, (short) 980);
 									stmt4.setBigDecimal(6, balance);
 									stmt4.setBigDecimal(7, amount);
 									stmt4.executeUpdate();
@@ -550,7 +550,6 @@ public class BankAccountController implements IBankAccount {
 		return getTransactions(token, account, new java.sql.Date(from.getTime()), new java.sql.Date(to.getTime()));
 	}
 
-///////////////////////|///////////////////////////
 	@Override
 	public List<Transaction> getTransactions(String token, long account, java.sql.Date from, java.sql.Date to)
 			throws TokenNotValidException, WrongDateException, InternalServerError {

@@ -130,4 +130,5 @@ public class Transaction {
 				+ ", type=" + type + ", currency=" + currency + ", balanceAfter=" + balanceAfter + ", amount=" + amount
 				+ ", date=" + date + ", description=" + description + ", location=" + location + "]";
 	}
+
 }
