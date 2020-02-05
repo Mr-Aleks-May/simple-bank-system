@@ -1,11 +1,12 @@
-# Simple Bank System Application
+# Simple Bank System Application (Final)
 
 ### Содержание:
 
 1. Установка и запуск
 2. Робота с БД.
 3. Примеры запросов.  
-4. API для тестирования
+4. API для тестирования.
+5. Коды ответов (ошибки).
   
    
   
@@ -41,7 +42,7 @@ password: qwerty1
 
 ### III. Examles of requests
 **1. Запрос для регистрации нового клиента:**\
-<**POST**> `http://localhost:8080/api/signup?email=test@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
+<**POST**> `http://localhost:8080/api/signup?email=api.test@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -54,7 +55,7 @@ password: qwerty1
 
 
 **2. Запрос аутентификации от клиента:**\
-<**POST**> `http://localhost:8080/api/signin?email=test@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
+<**POST**> `http://localhost:8080/api/signin?email=api.test@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`
 
 ***Возможные ответы:***\
 Параметр "status":
@@ -133,11 +134,56 @@ password: qwerty1
 >Если в "status" 0, то в параметре "transactions" находиться список всех транзакций за выбраный период (включительно).  
 Иначе, данного парамера не будет в ответе.  
 
+**7. Запрос на получение списка всех счетов пользователя:**\
+<**POST**> `http://localhost:8080/api/get_accounts?token=ykPQqt38yBDHeGi4OIK9obdRxtrX7rwW`  
+
+***Возможные ответы:***\
+Параметр "status":  
+>0 - список транзакций будет возвращен в параметре "transactions" (масив).\
+602 - не коректный токен.\
+302 - токен недействителен.\
+500 - при выполнении запроса на сервере произошла ошибка.  
+
+Параметр "accounts":  
+>Если в "status" 0, то в параметре "accounts" находиться список всех счетов пользователя.  
+Иначе, данного парамера не будет в ответе.  
+
 
 ### IV. API requests for testing
-<**GET**> `http://localhost:8080/api/test/signup?email=user@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`  
-<**GET**> `http://localhost:8080/api/test/signin?email=user@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`  
+<**GET**> `http://localhost:8080/api/test/signup?email=api.user@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`  
+<**GET**> `http://localhost:8080/api/test/signin?email=api.user@mail.com&password=5f4dcc3b5aa765d61d8327deb882cf99`  
 <**GET**> `http://localhost:8080/api/test/account/deposite?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=1&amount=100`  
 <**GET**> `http://localhost:8080/api/test/account/withdraw?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=1&amount=75.06`  
 <**GET**> `http://localhost:8080/api/test/account/get_balance?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=1`  
 <**GET**> `http://localhost:8080/api/test/account/view/transactions?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g&account=1&from=1.1.2020&to=2.2.2022`  
+<**GET**> `http://localhost:8080/api/test/get_accounts?token=9vSTQyHOSslYhJZK01HqSuUgGwNEVb8g`  
+
+### V. Exceptions  
+На данный момент, ошибки\исключения разделяються на 6 категорий.  
+Они приведены ниже в формате: код ошибки\ответа. (возникающее исключение). - Из-за чего возникла ошибка\исключение.  
+
+**Ошибки возникающие при регистрации пользователя:**  
+**100** *(ClientAlreadyExistsException)* - `Означает, что клиент с таким email адресом уже был зарегистрирован.`  
+
+**Ошибки возникающие при работе со счетом (аккаутом):**  
+**200** *(AccountNotCreatedException)* - `Произошла ошибка при открытии счета.`  
+**201** *(AccountNotFoundException)* - `Счет не существует\принадлежит другому клиенту.`  
+
+**Ошибки аутентификации:**  
+**300** *(ClientNotExistsException)* - `Клиента с указаными данными (email), сейчас не существует.`  
+**301** *(WrongPasswordException)* - `Пароль отличается от требуемого.`  
+**302** *(TokenNotValidException)* - `Токен устарел.`  
+
+**Ошибки при совершении транзакций:**  
+**400** *(BankTransactionException)* - `Ошибка при переводе денег между счетами клиентов.`  
+**401** *(InsufficientFundException)* - `Количество денег находящееся на указаном счете, недостаточное для совершения операции.`  
+
+**Внутрение ошибки:**  
+**500** *(InternalServerError)* - `Внутреняя ошибка произошедшая на сервере. Детали в логах.`  
+
+**Неверные данные в параметрах:**  
+**600** *(-)* - `Указаный email адрес, не является коректным.`  
+**601** *(-)* - `Пароль не коректен (длина пароля не равна 32 символам).`  
+**602** *(-)* - `Токен не коректен (длина не равна 32).`  
+**603** *(WrongDateException)* - `Не верно указаные даты в параметрах from(с какого числа начинать) и to(каким заканчивать). from > to.` 
+

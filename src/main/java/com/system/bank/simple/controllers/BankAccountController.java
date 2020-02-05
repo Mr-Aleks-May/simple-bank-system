@@ -175,7 +175,7 @@ public class BankAccountController implements IBankAccount {
 						throw new TokenNotValidException();
 					}
 
-					int customer_id = rs1.getInt("id");
+					int customer_id = rs1.getInt("customer_id");
 
 					try (PreparedStatement stmt2 = connection.prepareStatement(
 							"INSERT INTO accounts(customer_id, currency, balance) VALUES(?, ?, ?);");) {
@@ -216,7 +216,7 @@ public class BankAccountController implements IBankAccount {
 					int customerId = rs1.getInt("customer_id");
 
 					try (PreparedStatement stmt2 = connection
-							.prepareStatement("SELECT * FROM accounts WHERE customer_id=? LIMIT 1;");) {
+							.prepareStatement("SELECT * FROM accounts WHERE customer_id=?");) {
 						stmt2.setInt(1, customerId);
 
 						try (ResultSet rs2 = stmt2.executeQuery();) {
@@ -394,7 +394,6 @@ public class BankAccountController implements IBankAccount {
 							try (PreparedStatement stmt3 = connection
 									.prepareStatement("UPDATE accounts SET balance=? WHERE customer_id=?;");) {
 								stmt3.setBigDecimal(1, balance);
-
 								stmt3.setInt(2, customer_id);
 								stmt3.executeUpdate();
 
@@ -466,7 +465,6 @@ public class BankAccountController implements IBankAccount {
 							try (PreparedStatement stmt3 = connection
 									.prepareStatement("UPDATE accounts SET balance=? WHERE customer_id=?;");) {
 								stmt3.setBigDecimal(1, balance);
-
 								stmt3.setInt(2, customer_id);
 								stmt3.executeUpdate();
 
@@ -572,7 +570,7 @@ public class BankAccountController implements IBankAccount {
 					int customer_id = rs1.getInt("customer_id");
 
 					try (PreparedStatement stmt2 = connection.prepareStatement(
-							"SELECT * FROM transactions WHERE customer_id=? AND  date BETWEEN ? AND ?;");) {
+							"SELECT * FROM transactions WHERE customer_id=? AND date BETWEEN ? AND ?;");) {
 						stmt2.setInt(1, customer_id);
 						stmt2.setDate(2, from);
 						stmt2.setDate(3, to);

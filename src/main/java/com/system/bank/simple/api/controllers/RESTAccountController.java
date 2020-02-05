@@ -21,6 +21,7 @@ import com.system.bank.simple.exceptions.InternalServerError;
 import com.system.bank.simple.exceptions.TokenNotValidException;
 import com.system.bank.simple.exceptions.WrongDateException;
 import com.system.bank.simple.exceptions.WrongPasswordException;
+import com.system.bank.simple.models.BankAccountInfo;
 import com.system.bank.simple.models.Transaction;
 import com.system.bank.simple.utils.Validator;
 
@@ -192,6 +193,29 @@ public class RESTAccountController {
 				response = new Response().add("status", 302);
 			} catch (WrongDateException e) {
 				response = new Response().add("status", 603);
+			} catch (InternalServerError e) {
+				response = new Response().add("status", 500);
+			}
+		}
+
+		return response.toJSON();
+	}
+
+	@RequestMapping(value = "/api/get_accounts", method = RequestMethod.POST, produces = "application/json; charset=utf-8")
+	public String getCustomerAccounts(@RequestParam(name = "token", required = true) String token) {
+
+		Response response = null;
+
+		if (token.length() != 32) {
+			response = new Response().add("status", 602);
+		} else {
+			IBankAccount ba = new com.system.bank.simple.controllers.BankAccountController();
+
+			try {
+				List<BankAccountInfo> accounts = ba.getBankAccounts(token);
+				response = new Response().add("status", 0).add("accounts", accounts);
+			} catch (TokenNotValidException e) {
+				response = new Response().add("status", 302);
 			} catch (InternalServerError e) {
 				response = new Response().add("status", 500);
 			}

@@ -3,7 +3,7 @@ package com.system.bank.simple.models;
 import java.math.BigDecimal;
 
 public class BankAccountInfo {
-	private int id;
+	private long id;
 	private int customerId;
 	private short currency;
 	private BigDecimal balance;
@@ -12,7 +12,7 @@ public class BankAccountInfo {
 		super();
 	}
 
-	public BankAccountInfo(int id, int customerId, short currency, BigDecimal balance) {
+	public BankAccountInfo(long id, int customerId, short currency, BigDecimal balance) {
 		super();
 		this.id = id;
 		this.customerId = customerId;
@@ -20,11 +20,11 @@ public class BankAccountInfo {
 		this.balance = balance;
 	}
 
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 
