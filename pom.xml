@@ -9,7 +9,7 @@
 		<version>2.2.4.RELEASE</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.bank.system</groupId>
+	<groupId>com.projects.system.bank</groupId>
 	<artifactId>simple-bank-system</artifactId>
 	<version>1.0-RELEASE</version>
 	<name>simple-bank-system</name>
